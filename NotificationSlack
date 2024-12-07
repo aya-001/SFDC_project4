@@ -1,4 +1,4 @@
-public with sharing class notificationSlack {
+public with sharing class NotificationSlack {
 
     private static final String SLACK_BOT_TOKEN = 'xx';
 
