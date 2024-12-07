@@ -1,0 +1,117 @@
+public with sharing class notificationSlack {
+
+    private static final String SLACK_BOT_TOKEN = 'xx';
+
+    public class SlackParams {
+        @invocableVariable(required=true)
+        public String channelId;
+
+        @invocableVariable(required=true)
+        public String messageText;
+
+        @invocableVariable(required=true)
+        public String buttonLabel;
+
+        @invocableVariable(required=true)
+        public String buttonUrl;
+    }
+
+    public class Output{
+        @InvocableVariable(label='Call Result')
+        public String result;
+    }
+
+
+
+    @invocableMethod(label='Post Message to Slack' description='Send a message to Slack with a button link')
+    public static List<Output> postMessageToSlack(List<SlackParams> inputParams) {
+        SlackParams inputParam = inputParams[0];
+
+        //Initialize the Output list
+        List<Output> outputs = new List<Output>();
+
+
+        Http http = new Http();
+        HttpRequest req = new HttpRequest();
+        req.setEndpoint('https://slack.com/api/chat.postMessage');
+        req.setMethod('POST');
+        req.setHeader('Content-Type', 'application/json; charset=utf-8');
+        req.setHeader('Authorization', 'Bearer ' + SLACK_BOT_TOKEN);
+
+        //Construct payload for Slack
+/*            String jsonPayload = 
+            '{"channel" : "' + inputParam.channelId + '",' +
+        '"text" : "' + inputParam.messageText + '",' +
+        '"attachments":[{' + '"text":"",' + '"fallback" : "Click here for more details",' + '"actions" : [{' + '"type" : "button",' + '"text":"' + inputParam.buttonLabel + '",' +  '"url":"' + inputParam.buttonUrl + '",' + '"style":"primary"' + '}]}]}';
+
+        req.setBody(jsonPayload); 
+        
+        {"channel" : " + inputParam.channelId + ", +
+        "text" : " + inputParam.messageText + ", +
+        "attachments":[{ + 
+        "text":"", + 
+        "fallback" : "Click here for more details", + 
+        "actions" : [{ + 
+        "type" : "button", + 
+        "text":" + inputParam.buttonLabel + ", +  
+        "url":" + inputParam.buttonUrl + ", + 
+        "style":"primary" + 
+        }]}]};
+
+        */
+    
+        //buttons or interactive elements. 
+        //attachments can structure your message beyond plain text.Allows you to include buttons (actions) or visual elements.
+        //text within attachments: Specifies the main content or description within the attachment.
+        //If no dditional descriptive text inside the attachment, it can be left blank.
+        //fallback:Provides a plain-text summary of the attachment. This is displayed in environments where attachments can't be rendered 
+        //actions:Defines interactive elements, such as buttons, within the attachment.
+
+
+        // Construct payload using a Map
+        Map<String, Object> payload = new Map<String, Object>();
+        payload.put('channel', inputParam.channelId);
+        payload.put('text', inputParam.messageText);
+
+        // Add button attachment
+        Map<String, Object> attachment = new Map<String, Object>{
+            'fallback' => inputParam.buttonLabel,
+            'actions' => new List<Map<String, Object>>{
+                new Map<String, Object>{
+                    'type' => 'button',
+                    'text' => inputParam.buttonLabel,
+                    'url' => inputParam.buttonUrl,
+                    'style' => 'primary'
+                }
+            }
+        };
+
+        payload.put('attachments', new List<Object>{ attachment });
+
+        // Serialize payload to JSON
+        req.setBody(JSON.serialize(payload));
+
+        //instance of Output method
+        Output output = new Output();
+        try {
+            HttpResponse response = http.send(req);
+            if(response.getStatusCode() != 200){
+                System.debug('Error posting to Slack: ' + response.getBody());
+                // Set the output result
+                output.result = 'Error posting to Slack: ' + response.getBody();
+
+            } else {
+                System.debug('Message posted to Slack successfully: ' + response.getBody());
+                output.result = 'Message posted to Slack successfully: ' + response.getBody();
+            }
+        } catch (Exception e) {
+            System.debug('Exception while posting to Slack: ' + e.getMessage());
+            output.result = 'Error: ' + e.getMessage();
+        }
+
+        outputs.add(output);
+        return outputs;
+    }
+
+    
+}
