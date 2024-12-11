@@ -1,6 +1,18 @@
 public with sharing class NotificationSlack {
 
-    private static final String SLACK_BOT_TOKEN = 'xx';
+    private static final String SLACK_BOT_TOKEN = '';
+
+    public class SlackButton {
+        @invocableVariable(required=false)
+        public String buttonLabel;
+
+        @invocableVariable(required=false)
+        public String buttonUrl;
+
+        @invocableVariable(required=false)
+        public String buttonStyle;
+
+    }
 
     public class SlackParams {
         @invocableVariable(required=true)
@@ -9,22 +21,26 @@ public with sharing class NotificationSlack {
         @invocableVariable(required=true)
         public String messageText;
 
-        @invocableVariable(required=true)
-        public String buttonLabel;
+        @invocableVariable(required=false)
+        public String timeStampId;
 
-        @invocableVariable(required=true)
-        public String buttonUrl;
+        @invocableVariable(required=false)
+        public List<SlackButton> buttons;//list to hold multiple buttons
     }
 
     public class Output{
         @InvocableVariable(label='Call Result')
         public String result;
+
+        @InvocableVariable(label='Call Result')
+        public String statusCode;
     }
 
 
 
     @invocableMethod(label='Post Message to Slack' description='Send a message to Slack with a button link')
     public static List<Output> postMessageToSlack(List<SlackParams> inputParams) {
+        //first element of SlackParm class input
         SlackParams inputParam = inputParams[0];
 
         //Initialize the Output list
@@ -73,18 +89,43 @@ public with sharing class NotificationSlack {
         payload.put('channel', inputParam.channelId);
         payload.put('text', inputParam.messageText);
 
+        if(inputParam.timeStampId != null){
+            payload.put('timeStampId',inputParam.timeStampId);
+        }
+
         // Add button attachment
-        Map<String, Object> attachment = new Map<String, Object>{
+        /* Map<String, Object> attachment = new Map<String, Object>{
             'fallback' => inputParam.buttonLabel,
             'actions' => new List<Map<String, Object>>{
                 new Map<String, Object>{
                     'type' => 'button',
                     'text' => inputParam.buttonLabel,
                     'url' => inputParam.buttonUrl,
-                    'style' => 'primary'
+                    'style' => inputParam.buttonStyle != null ? inputParam.buttonStyle :'primary'
                 }
             }
+        }; */
+
+        //List instance to put Slack action
+        //for loop of SlackButton object
+        List<Map<String,Object>> actions = new List<Map<String,Object>>();
+        for(SlackButton bt : inputParam.buttons){
+            Ma<String, Object> action = new Map<String, Objet>{
+                'type' => 'button',
+                'text' => inputParam.buttonLabel,
+                'url' => inputParam.buttonUrl,
+                'style' => inputParam.buttonStyle != null ? inputParam.buttonStyle :'primary'
+            };
+            actions.add(action);
+        }
+
+        // Add button attachment
+        Map<String, Object> attachment = new Map<String, Object>{
+            'fallback' => inputParam.buttonLabel,
+            'actions' => actions
         };
+
+
 
         payload.put('attachments', new List<Object>{ attachment });
 
@@ -99,6 +140,7 @@ public with sharing class NotificationSlack {
                 System.debug('Error posting to Slack: ' + response.getBody());
                 // Set the output result
                 output.result = 'Error posting to Slack: ' + response.getBody();
+                output.statusCode = response.getStatusCode();
 
             } else {
                 System.debug('Message posted to Slack successfully: ' + response.getBody());
