@@ -20,6 +20,9 @@ public with sharing class SendSlackMessages {
     
         @invocableVariable(label='Button 1 URL' required=false)
         public String button1Url;
+
+        @invocableVariable(label='Unique Button1 Id' required=false Description='input custom unique Id for a button with number,alphabet')
+        public String button1Id;
     
         @invocableVariable(label='Button 1 Style' required=false description='default or promary or danger')
         public String button1Style;
@@ -31,6 +34,9 @@ public with sharing class SendSlackMessages {
         @invocableVariable(label='Button 2 URL' required=false)
         public String button2Url;
     
+        @invocableVariable(label='Unique Button2 Id' required=false Description='input custom unique Id for a button with number,alphabet')
+        public String button2Id;
+
         @invocableVariable(label='Button 2 Style' required=false description='default or promary or danger')
         public String button2Style;
     }
@@ -123,8 +129,8 @@ public with sharing class SendSlackMessages {
             actions.add(new Map<String, Object>{
                 'type' => 'button',
                 'text' => inputParam.button1Label,
-                'url' => inputParam.button1Url,
-                'style' => inputParam.button1Style != null ? inputParam.button1Style : 'primary'
+                'action_id' => inputParam.button1Id,
+                'style'=> inputParam.button1Style != null ? inputParam.button1Style : 'primary'
             });
         }
 
@@ -133,7 +139,7 @@ public with sharing class SendSlackMessages {
             actions.add(new Map<String, Object>{
                 'type' => 'button',
                 'text' => inputParam.button2Label,
-                'url' => inputParam.button2Url,
+                'action_id' => inputParam.button2Id,
                 'style' => inputParam.button2Style != null ? inputParam.button2Style : 'primary'
             });
         }
