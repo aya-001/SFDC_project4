@@ -1,19 +1,18 @@
-public with sharing class NotificationSlack {
+public with sharing class SendSlackMessages {
 
     //Bot Token from Slack
     private static final String SLACK_BOT_TOKEN = '';
-    //private static final String SLACK_BOT_TOKEN =''
 
     //Flow inner class to define parameters from FLow
     public class SlackParams {
-        @invocableVariable(required=true)
+        @invocableVariable(label='ChannelId' required=true)
         public String channelId;
     
-        @invocableVariable(required=true)
+        @invocableVariable(label='Message Text' required=true)
         public String messageText;
     
-        @invocableVariable(required=false)
-        public String timeStampId;
+        @invocableVariable(label='Thread TimeStamp' required=false)
+        public String threadTimeStampId;
     
         // Button 1 fields
         @invocableVariable(label='Button 1 Label' required=false)
@@ -42,6 +41,9 @@ public with sharing class NotificationSlack {
 
         @InvocableVariable(label='Call Result')
         public Integer statusCode;
+
+        @invocableVariable(label='Slack TimeStamp Response')
+        public String responseTimeStamp;
     }
 
 
@@ -86,8 +88,8 @@ public with sharing class NotificationSlack {
     
         //buttons or interactive elements. 
         //attachments : can structure message beyond plain text.Allows tp include buttons (actions) or visual elements.
-        //fallback:Provides a plain-text summary of the attachment. This is displayed in environments where attachments can't be rendered 
-        //actions:Defines interactive elements, such as buttons, within the attachment.
+        //fallback: Provides a plain-text summary of the attachment. This is displayed in environments where attachments can't be rendered 
+        //actions: Defines interactive elements, such as buttons, within the attachment.
 
 
         // Construct payload using a Map
@@ -95,8 +97,9 @@ public with sharing class NotificationSlack {
         payload.put('channel', inputParam.channelId);
         payload.put('text', inputParam.messageText);
 
-        if(inputParam.timeStampId != null){
-            payload.put('timeStampId',inputParam.timeStampId);
+        if(inputParam.threadTimeStampId != null){
+            //thread_ts : specified name for slack api 
+            payload.put('thread_ts',inputParam.threadTimeStampId);
         }
 
         // Add button attachment
@@ -158,9 +161,16 @@ public with sharing class NotificationSlack {
                 output.result = 'Error posting to Slack: ' + response.getBody();
                 output.statusCode = response.getStatusCode();
 
-            } else {
+            } else { //success
                 System.debug('Message posted to Slack successfully: ' + response.getBody());
                 output.result = 'Message posted to Slack successfully: ' + response.getBody();
+
+                 //get responsbody and assign timestamp Id(String)
+                 Map<String, Object> responseBody = (Map<String, Object>)JSON.deserializeUntyped(response.getBody());
+                 if(responseBody.containsKey('ts')){
+                     output.responseTimeStamp = (String)responseBody.get('ts');
+                     System.debug('Message responseTimeStamp: ' + output.responseTimeStamp); 
+                 }
             }
         } catch (Exception e) {
             System.debug('Exception while posting to Slack: ' + e.getMessage());
