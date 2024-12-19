@@ -1,0 +1,36 @@
+@IsTest
+public with sharing class SendSlackMessagesTest {
+
+    @TestSetup
+    static void setup(){
+
+    }
+
+    @IsTest
+    static void TestSendSlackMessages(){
+
+        //call mock class for http call
+        Test.setMock(HttpCallMock.class, new MockHttpResponseGenerator());
+
+        // create an instance of the input parameter class
+        List<SendSlackMessages.SlackParams> inputs = new List<SendSlackMessages.SlackParams>();
+        SendSlackMessages.SlackParams input = new SendSlackMessages.SlackParams();
+        input.button1Label = 'Test Label';
+        input.messageText = 'Message Test Test';
+        input.button1Url = 'https://www.google.com/';
+        input.channelId = 'CHFS2HKT3J';
+        input.threadTimeStampId = '2483992.034523';
+        inputs.add(input);
+
+        //call Method to be tested
+        Test.startTest();
+        List<SendSlackMessages.Output> outputs = SendSlackMessages.postMessageToSlack(inputs);
+        Test.stopTest();
+
+        //Verufy ressult
+        system.assertEquals(200,outputs[0].statudCode);
+
+    }
+
+
+}
