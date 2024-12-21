@@ -1,0 +1,186 @@
+public with sharing class SendSlackMessages {
+
+    //Bot Token from Slack
+    private static final String SLACK_BOT_TOKEN = '';
+
+    //Flow inner class to define parameters from FLow
+    public class SlackParams {
+        @invocableVariable(label='ChannelId' required=true)
+        public String channelId;
+    
+        @invocableVariable(label='Message Text' required=true)
+        public String messageText;
+    
+        @invocableVariable(label='Thread TimeStamp' required=false)
+        public String threadTimeStampId;
+    
+        // Button 1 fields
+        @invocableVariable(label='Button 1 Label' required=false)
+        public String button1Label;
+    
+        @invocableVariable(label='Button 1 URL' required=false)
+        public String button1Url;
+    
+        @invocableVariable(label='Button 1 Style' required=false description='default or promary or danger')
+        public String button1Style;
+    
+        // Button 2 fields
+        @invocableVariable(label='Button 2 Label' required=false)
+        public String button2Label;
+    
+        @invocableVariable(label='Button 2 URL' required=false)
+        public String button2Url;
+    
+        @invocableVariable(label='Button 2 Style' required=false description='default or promary or danger')
+        public String button2Style;
+    }
+
+    public class Output{
+        @InvocableVariable(label='Call Result')
+        public String result;
+
+        @InvocableVariable(label='Call Status Code')
+        public Integer statusCode;
+
+        @invocableVariable(label='Slack TimeStamp Response')
+        public String responseTimeStamp;
+    }
+
+
+
+    @invocableMethod(label='Post Message to Slack' description='Send a message to Slack with a button link')
+    public static List<Output> postMessageToSlack(List<SlackParams> inputParams) {
+        //first element of SlackParm class input
+        SlackParams inputParam = inputParams[0];
+
+        //Initialize the Output list
+        List<Output> outputs = new List<Output>();
+
+
+        Http http = new Http();
+        HttpRequest req = new HttpRequest();
+        req.setEndpoint('https://slack.com/api/chat.postMessage');
+        req.setMethod('POST');
+        req.setHeader('Content-Type', 'application/json; charset=utf-8');
+        req.setHeader('Authorization', 'Bearer ' + SLACK_BOT_TOKEN);
+
+        //Construct payload for Slack
+/*            String jsonPayload = 
+            '{"channel" : "' + inputParam.channelId + '",' +
+        '"text" : "' + inputParam.messageText + '",' +
+        '"attachments":[{' + '"text":"",' + '"fallback" : "Click here for more details",' + '"actions" : [{' + '"type" : "button",' + '"text":"' + inputParam.buttonLabel + '",' +  '"url":"' + inputParam.buttonUrl + '",' + '"style":"primary"' + '}]}]}';
+
+        req.setBody(jsonPayload); 
+        
+        {"channel" : " + inputParam.channelId + ", +
+        "text" : " + inputParam.messageText + ", +
+        "attachments":[{ + 
+        "text":"", + 
+        "fallback" : "Click here for more details", + 
+        "actions" : [{ + 
+        "type" : "button", + 
+        "text":" + inputParam.buttonLabel + ", +  
+        "url":" + inputParam.buttonUrl + ", + 
+        "style":"primary" + 
+        }]}]};
+
+        */
+    
+        //buttons or interactive elements. 
+        //attachments : can structure message beyond plain text.Allows tp include buttons (actions) or visual elements.
+        //fallback: Provides a plain-text summary of the attachment. This is displayed in environments where attachments can't be rendered 
+        //actions: Defines interactive elements, such as buttons, within the attachment.
+
+
+        // Construct payload using a Map
+        Map<String, Object> payload = new Map<String, Object>();
+        payload.put('channel', inputParam.channelId);
+        payload.put('text', inputParam.messageText);
+
+        if(inputParam.threadTimeStampId != null){
+            //thread_ts : specified name for slack api 
+            payload.put('thread_ts',inputParam.threadTimeStampId);
+        }
+
+        // Add button attachment
+        /* Map<String, Object> attachment = new Map<String, Object>{
+            'fallback' => inputParam.buttonLabel,
+            'actions' => new List<Map<String, Object>>{
+                new Map<String, Object>{
+                    'type' => 'button',
+                    'text' => inputParam.buttonLabel,
+                    'url' => inputParam.buttonUrl,
+                    'style' => inputParam.buttonStyle != null ? inputParam.buttonStyle :'primary'
+                }
+            }
+        }; */
+
+        //List instance to put Slack action
+        //for loop of SlackButton object
+        List<Map<String,Object>> actions = new List<Map<String,Object>>();
+        //Button1
+        if(inputParam.button1Label != null && inputParam.button1Url != null){
+            actions.add(new Map<String, Object>{
+                'type' => 'button',
+                'text' => inputParam.button1Label,
+                'url' => inputParam.button1Url,
+                'style' => inputParam.button1Style != null ? inputParam.button1Style : 'primary'
+            });
+        }
+
+        //Button2
+        if(inputParam.button2Label != null && inputParam.button2Url != null){
+            actions.add(new Map<String, Object>{
+                'type' => 'button',
+                'text' => inputParam.button2Label,
+                'url' => inputParam.button2Url,
+                'style' => inputParam.button2Style != null ? inputParam.button2Style : 'primary'
+            });
+        }
+
+        // Add button attachment
+        Map<String, Object> attachment = new Map<String, Object>{
+            'fallback' => 'button action',
+            'actions' => actions
+        };
+
+
+
+        payload.put('attachments', new List<Object>{ attachment });
+
+        // Serialize payload to JSON
+        req.setBody(JSON.serialize(payload));
+
+        //instance of Output method
+        Output output = new Output();
+        try {
+            HttpResponse response = http.send(req);
+            if(response.getStatusCode() != 200){
+                System.debug('Error posting to Slack: ' + response.getBody());
+                // Set the output result
+                output.result = 'Error posting to Slack: ' + response.getBody();
+                output.statusCode = response.getStatusCode();
+
+            } else { //success
+                System.debug('Message posted to Slack successfully: ' + response.getBody());
+                output.result = 'Message posted to Slack successfully: ' + response.getBody();
+                output.statusCode = response.getStatusCode();
+                
+                 //get responsbody and assign timestamp Id(String)
+                 Map<String, Object> responseBody = (Map<String, Object>)JSON.deserializeUntyped(response.getBody());
+                 if(responseBody.containsKey('ts')){
+                     output.responseTimeStamp = (String)responseBody.get('ts');
+                     System.debug('Message responseTimeStamp: ' + output.responseTimeStamp); 
+                 }
+            }
+        } catch (Exception e) {
+            System.debug('Exception while posting to Slack: ' + e.getMessage());
+            output.result = 'Error: ' + e.getMessage();
+        }
+
+        outputs.add(output);
+        return outputs;
+    }
+
+    
+}
