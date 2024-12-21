@@ -1,0 +1,18 @@
+public class CalloutClass {
+    public static Httpresponse getInfoFromEcxternalService(){
+        //a fake callout method with Endpoint for a test of http callout
+
+        //Instantiate HttpRequest class to use in test
+        //set Endpoint & Method type of requestq
+        HttpRequest req = new HttpRequest();
+        //req.setEndpoint('https://example.com/example/test');
+        req.setEndpoint('https://ss.dataspidercloud.com/ws/trigger/example/test?cid=a0G5i00000KslU2EAJ&sid=11868');
+        req.setMethod('GET');
+
+        //receive response after request
+        Http h = new Http();
+        HttpResponse res = h.send(req);
+        return res;
+        
+    }
+}
